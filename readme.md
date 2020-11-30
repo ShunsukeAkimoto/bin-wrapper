@@ -1,5 +1,7 @@
 # bin-wrapper [![Build Status](https://travis-ci.org/kevva/bin-wrapper.svg?branch=master)](https://travis-ci.org/kevva/bin-wrapper)
 
+Changed from original: Add support behind company proxy.  Please set https_proxy and NODE_EXTRA_CA_CERTS.
+
 > Binary wrapper that makes your programs seamlessly available as local dependencies
 
 
