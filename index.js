@@ -7,7 +7,8 @@ const importLazy = require('import-lazy')(require);
 
 const binCheck = importLazy('bin-check');
 const binVersionCheck = importLazy('bin-version-check');
-const download = importLazy('download');
+const download = importLazy('download')
+const tunnel = require('tunnel');
 const osFilterObj = importLazy('os-filter-obj');
 
 const statAsync = pify(fs.stat);
@@ -173,10 +174,33 @@ module.exports = class BinWrapper {
 
 		files.forEach(file => urls.push(file.url));
 
-		return Promise.all(urls.map(url => download(url, this.dest(), {
-			extract: true,
-			strip: this.options.strip
-		}))).then(result => {
+		const proxy = process.env.http_proxy || process.env.https_proxy || process.env.HTTP_PROXY || process.env.HTTPS_PROXY;
+		const cert  = process.env.NODE_EXTRA_CA_CERTS;
+		const [proxy_host, proxy_port] = proxy.replace(/http?:\/\//,'').replace('\/','').split(':');
+		
+		let options;
+		if (proxy && cert) {
+			options = {
+				extract: true,
+				strip: this.options.strip,
+				agent: {
+					https: tunnel.httpsOverHttp({
+						proxy: {
+							host: proxy_host,
+							port: proxy_port,
+							certificate: fs.readFileSync(cert)
+						}
+					})
+				}
+			};
+		} else {
+			options = {
+				extract: true,
+				strip: this.options.strip
+			};
+		}
+		
+		return Promise.all(urls.map(url => download(url, this.dest(), options))).then(result => {
 			const resultingFiles = flatten(result.map((item, index) => {
 				if (Array.isArray(item)) {
 					return item.map(file => file.path);
